@@ -1,6 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open System
+﻿open System
 open System.Collections.Generic;
 open System.IO;
 open System.Linq;
@@ -15,6 +13,15 @@ open Google.Apis.Util.Store;
 
 [<EntryPoint>]
 let main argv =
+
+    let logPath = "log.txt"
+    let logAction(fileId: string, emailAddress: string) =
+        
+        let time = DateTime.Now.ToLongDateString()
+        File.AppendAllText(logPath, time + " " + fileId + " " + emailAddress)        
+
+    let whitelist = File.ReadAllLines("whitelist.txt") //load whitelist
+
     let Scopes = [DriveService.Scope.Drive]
     let ApplicationName = "CompleteTeamDriveMigration";
 
@@ -39,11 +46,12 @@ let main argv =
             let permissionId = perm.Id
             if perm.TeamDrivePermissionDetails.Item(0).TeamDrivePermissionType = "file" then
                 if perm.WithLink <> System.Nullable<bool>(true) then
-                    printfn "file"
-                    service.Permissions.Delete(fileId, permissionId, SupportsTeamDrives = System.Nullable<bool>(true)).Execute() |> ignore
+                    if not <| Array.contains perm.EmailAddress whitelist then
+                        logAction(fileId, perm.EmailAddress)
+                        service.Permissions.Delete(fileId, permissionId, SupportsTeamDrives = System.Nullable<bool>(true)).Execute() |> ignore
         0
 
     for file in files do
         removeUser(file.Id) |> ignore
-
-    0 // return an integer exit code
+    
+    0
