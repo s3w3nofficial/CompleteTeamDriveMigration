@@ -16,7 +16,7 @@ open Google.Apis.Util.Store;
 [<EntryPoint>]
 let main argv =
     let Scopes = [DriveService.Scope.Drive]
-    let ApplicationName = "Drive API .NET Quickstart";
+    let ApplicationName = "CompleteTeamDriveMigration";
 
     let path = "client_secret.json"
     let stream = new FileStream(path, FileMode.Open)
@@ -35,11 +35,12 @@ let main argv =
     let removeUser(fileId : string) =
         
         let permissions = service.Permissions.List(fileId, SupportsTeamDrives = System.Nullable<bool>(true)).Execute().Items
-        for perm in permissions do            
+        for perm in permissions do
             let permissionId = perm.Id
             if perm.TeamDrivePermissionDetails.Item(0).TeamDrivePermissionType = "file" then
-                printfn "file"
-                service.Permissions.Delete(fileId, permissionId, SupportsTeamDrives = System.Nullable<bool>(true)).Execute() |> ignore
+                if perm.WithLink <> System.Nullable<bool>(true) then
+                    printfn "file"
+                    service.Permissions.Delete(fileId, permissionId, SupportsTeamDrives = System.Nullable<bool>(true)).Execute() |> ignore
         0
 
     for file in files do
